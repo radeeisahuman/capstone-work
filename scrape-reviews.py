@@ -38,8 +38,7 @@ def extract_reviews(page):
 		output_dict['rating'].append(rating)
 		output_dict['review_text'].append(review_text)
 
-	pd.DataFrame(output_dict).to_csv("reviews.csv", index=False)
-
 	time.sleep(4)
+	return pd.DataFrame(output_dict)
 
 extract_reviews('https://www.reed.co.uk/courses/data-analytics-power-bi-tableau-python-cloud-computing-analyst-microsoft-excel-it/416128')
