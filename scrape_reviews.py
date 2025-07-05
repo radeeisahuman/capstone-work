@@ -17,13 +17,20 @@ def extract_reviews(page):
 	driver.get(page)
 	time.sleep(5)
 
-	accept_button = driver.find_element(By.ID, 'onetrust-accept-btn-handler')
-	accept_button.click()
+	try:
+		accept_button = driver.find_element(By.ID, 'onetrust-accept-btn-handler')
+		accept_button.click()
+	except:
+		pass
 	course_review_section = driver.find_element(By.ID, "providerCourseReviews")
+	count = 0
 	while True:
 		try:
 			links = course_review_section.find_elements(By.TAG_NAME, 'a')
 			links[1].send_keys("", Keys.ENTER)
+			count += 1
+			if count > 5:
+				break
 		except:
 			break
 
@@ -41,4 +48,17 @@ def extract_reviews(page):
 	time.sleep(4)
 	return pd.DataFrame(output_dict)
 
-extract_reviews('https://www.reed.co.uk/courses/data-analytics-power-bi-tableau-python-cloud-computing-analyst-microsoft-excel-it/416128')
+data = pd.read_csv('id_extracted_links.csv')
+
+output = pd.DataFrame({
+    'rating': [],
+    'review_text': []
+})
+top_ten = 10
+for i in data['course_link']:
+    output = pd.concat([extract_reviews(i), output], ignore_index=True)
+    top_ten -= 1
+    if top_ten == 0:
+        break
+
+output.to_csv('sample_output.csv')
