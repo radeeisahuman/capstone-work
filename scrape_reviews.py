@@ -6,15 +6,16 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
 
-def extract_reviews(row):
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service)
+
+def extract_reviews_from_reed(row):
 	output_dict = {
 		'rating': [],
 		'review_text': [],
 		'course_name': [],
 		'provider': []
 	}
-	service = Service(ChromeDriverManager().install())
-	driver = webdriver.Chrome(service=service)
 
 	driver.get(row['course_link'])
 	time.sleep(5)
@@ -60,19 +61,26 @@ def extract_reviews(row):
 	time.sleep(4)
 	return pd.DataFrame(output_dict)
 
+def get_topics(url):
+	driver.get(url)
+	topics = {
+		'topic_name': [],
+		'topic_href': [],
+	}
+
+	promoted_topic = driver.find_element(By.CLASS_NAME, "promoted-topic-column")
+	topics['topic_name'].append(promoted_topic.find_element(By.CLASS_NAME, "domain-card-name").text)
+	topics['topic_href'].append(promoted_topic.find_element(By.TAG_NAME, "a").get_attribute("href"))
+
+	try:
+		scraped_topics = driver.find_elements(By.CLASS_NAME, "topic-column")
+		for i in scraped_topics:
+			topics['topic_name'].append(i.find_element(By.CLASS_NAME, "domain-card-name").text)
+			topics['topic_href'].append(i.find_element(By.TAG_NAME, "a").get_attribute("href"))
+		button = driver.find_element(By.ID, "Topics-and-Skills:carousel-right")
+		button.click()
+	except:
+		pass
+
 data = pd.read_csv('id_extracted_links.csv')
 
-output = pd.DataFrame({
-    'rating': [],
-    'review_text': [],
-	'course_name': [],
-	'provider': []
-})
-top_ten = 10
-for index, row in data.iterrows():
-	output = pd.concat([extract_reviews(row), output], ignore_index=True)
-	top_ten -= 1
-	if top_ten <= 0:
-		break
-
-output.to_csv('temp.csv')
