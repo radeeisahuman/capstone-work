@@ -41,7 +41,7 @@ def reed_courses_list():
             course_id = course.get_attribute("id")
             course_title = course.find_element(By.CLASS_NAME, "course-card-title")
             course_name = course_title.text.strip()
-            course_link = reed_url + course_title.find_element(By.TAG_NAME, "a").get_attribute("href")
+            course_link = course_title.find_element(By.TAG_NAME, "a").get_attribute("href")
 
             data["course_id"].append(course_id)
             data["course_name"].append(course_name)
@@ -55,9 +55,63 @@ def reed_courses_list():
 
     pd.DataFrame(data).to_csv(f'{data_dir}/reed_courses_with_links.csv', index=False)
 
+    driver.quit()
+
+def reed_courses_reviews():
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service)
+    courses = pd.read_csv(f'{data_dir}/reed_courses_with_links.csv')
+
+    data = {
+        'course_id': [],
+        'course_name': [],
+        'review_text': []
+    }
+
+    for index, row in courses.iterrows():
+        print(f'Scraping course number: {index}')
+        driver.get(row["course_link"])
+        time.sleep(3)
+
+        try:
+            accept_button = driver.find_element(By.ID, "onetrust-accept-btn-handler")
+            accept_button.click()
+        except:
+            pass
+        
+        review_div = driver.find_element(By.ID, "reviewSection")
+
+        count = 10
+        
+        while count >0:
+            count -= 1
+            try:
+                review_links = review_div.find_elements(By.TAG_NAME,"a")
+                if review_links[1].text.strip() == 'View more':
+                    review_links[1].send_keys("" + Keys.ENTER)
+                else:
+                    print(f'Link error: {review_links[1].text.strip()}')
+                    break
+            except Exception as e:
+                print(type(e), e)
+                break
+
+        reviews = review_div.find_elements(By.CLASS_NAME, "review-content")
+
+        for review in reviews:
+            review_text = review.find_element(By.CLASS_NAME, "mt-1")
+            review_text_cleaned = review_text.find_element(By.TAG_NAME, "p").text.strip()
+            data["course_id"].append(row["course_id"])
+            data["course_name"].append(row["course_name"])
+            data["review_text"].append(review_text_cleaned)
+
+    pd.DataFrame(data).to_csv(f'{data_dir}/reed_course_reviews.csv', index=False)
+
 def main():
-    print("Collect the pages and links")
-    reed_courses_list()
+    #print("Collect the pages and links")
+    #reed_courses_list()
+    print("Start review scrape")
+    reed_courses_reviews()
 
 if __name__ == "__main__":
     main()
