@@ -80,11 +80,8 @@ def reed_courses_reviews():
             pass
         
         review_div = driver.find_element(By.ID, "reviewSection")
-
-        count = 10
         
-        while count >0:
-            count -= 1
+        while True:
             try:
                 review_links = review_div.find_elements(By.TAG_NAME,"a")
                 if review_links[1].text.strip() == 'View more':
