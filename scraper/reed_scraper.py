@@ -1,23 +1,24 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
 from pathlib import Path
 
 current_dir = Path.cwd()
-root_dir = current_dir.parents[0]
-data_dir = Path.joinpath(root_dir, "data")
+root_dir = current_dir
+data_dir = root_dir / "data"
+data_dir.mkdir(exist_ok=True)
 
 base_url = "https://www.reed.co.uk/courses/discount"
 reed_url = "https://www.reed.co.uk"
 
 # We will collect the first 100 pages of courses and links. We will have a total of 2500 courses to work with.
 def reed_courses_list():
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
+    options = Options()
+    options.add_argument("--headless=new")
+    driver = webdriver.Chrome(options=options)
     driver.get(base_url)
     time.sleep(5)
 
@@ -58,8 +59,9 @@ def reed_courses_list():
     driver.quit()
 
 def reed_courses_reviews():
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
+    options = Options()
+    options.add_argument("--headless=new")
+    driver = webdriver.Chrome()
     courses = pd.read_csv(f'{data_dir}/reed_courses_with_links.csv')
 
     data = {
@@ -69,8 +71,11 @@ def reed_courses_reviews():
     }
 
     for index, row in courses.iterrows():
+        if index > 10:
+            break
         print(f'Scraping course number: {index}')
         driver.get(row["course_link"])
+        driver.maximize_window()
         time.sleep(3)
 
         try:
@@ -105,8 +110,8 @@ def reed_courses_reviews():
     pd.DataFrame(data).to_csv(f'{data_dir}/reed_course_reviews.csv', index=False)
 
 def main():
-    #print("Collect the pages and links")
-    #reed_courses_list()
+    print("Collect the pages and links")
+    reed_courses_list()
     print("Start review scrape")
     reed_courses_reviews()
 
